@@ -40,7 +40,9 @@ object KinesisExampleScalaProducerBuild extends Build {
         Libraries.commonsLang3,
         Libraries.thrift,
         Libraries.slf4j,
-        Libraries.awsSdk
+        Libraries.awsSdk,
+        Libraries.twitter4j,
+        Libraries.twitter4js
         // Add your additional libraries here (comma-separated)...
       )
     )

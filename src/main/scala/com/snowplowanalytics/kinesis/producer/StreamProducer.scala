@@ -14,6 +14,10 @@ package com.snowplowanalytics.kinesis.producer
 
 // Java
 import java.nio.ByteBuffer
+import twitter4j._
+import twitter4j.auth.Authorization
+import twitter4j.conf.ConfigurationBuilder
+import twitter4j.auth.OAuthAuthorization
 
 // Amazon
 import com.amazonaws.AmazonServiceException
@@ -72,6 +76,12 @@ case class StreamProducer(config: Config) {
     private val ap = producer.getConfig("active-polling")
     val apDuration = ap.getInt("duration")
     val apInterval = ap.getInt("interval")
+
+    private val tauth = producer.getConfig("twitter-auth")
+    val consumerKey = tauth.getString("consumerKey")
+    val consumerSecret = tauth.getString("consumerSecret")
+    val accessToken = tauth.getString("accessToken")
+    val accessTokenSecret = tauth.getString("accessTokenSecret")
   }
 
   // Initialize
@@ -166,6 +176,63 @@ case class StreamProducer(config: Config) {
     }
   }
 
+  def produceTwitterStream(
+       name: String = ProducerConfig.streamName,
+       ordered: Boolean = ProducerConfig.eventsOrdered,
+       limit: Option[Int] = ProducerConfig.eventsLimit,
+       consumerKey : String = ProducerConfig.consumerKey,
+       consumerSecret : String = ProducerConfig.consumerSecret,
+       accessToken : String = ProducerConfig.accessToken,
+       accessTokenSecret : String = ProducerConfig.accessTokenSecret) {
+       if (stream.isEmpty) {
+         stream = Some(Kinesis.stream(name))
+       }
+      System.setProperty("twitter4j.oauth.consumerKey", consumerKey)
+      System.setProperty("twitter4j.oauth.consumerSecret", consumerSecret)
+      System.setProperty("twitter4j.oauth.accessToken", accessToken)
+      System.setProperty("twitter4j.oauth.accessTokenSecret", accessTokenSecret)
+      val auth = new OAuthAuthorization(new ConfigurationBuilder().build())
+
+      val twitterStream = new TwitterStreamFactory().getInstance(auth);
+      twitterStream.addListener(new StatusListener(){
+        def onStatus(status: Status) = {
+         var delim : String = ";;;"
+         var tdata: String =
+         status.getText()+ delim+ status.getFavoriteCount()+ delim+
+         status.getRetweetedStatus().getRetweetCount() + delim+ status.getLang()
+          writeTwitterStringRecord(tdata,System.currentTimeMillis())
+        }
+        // Unimplemented
+        def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice) {}
+        def onTrackLimitationNotice(i: Int) {}
+        def onScrubGeo(l: Long, l1: Long) {}
+        def onStallWarning(stallWarning: StallWarning) {}
+        def onException(e: Exception) {
+          println("Error receiving tweets")
+        }
+    })
+    // sample() method internally creates a thread which manipulates TwitterStream and calls these adequate listener methods continuously.
+  var query = new FilterQuery
+  query.track(Array("#MH17"))
+  twitterStream.filter(query);
+  }
+
+  private[producer] def writeTwitterStringRecord(
+      tdata: String, timestamp: Long): PutResult = {
+    if (ProducerConfig.logging) println(s"Writing String record.")
+    val stringData = tdata
+    val stringKey = s"partition-key-${timestamp % 100000}"
+    if (ProducerConfig.logging) println(s"  + data: $stringData")
+    if (ProducerConfig.logging) println(s"  + key: $stringKey")
+    val result = writeRecord(
+      data = ByteBuffer.wrap(stringData.getBytes),
+      key = stringKey
+    )
+    if (ProducerConfig.logging) println(s"Writing successful.")
+    if (ProducerConfig.logging) println(s"  + ShardId: ${result.shardId}")
+    if (ProducerConfig.logging) println(s"  + SequenceNumber: ${result.sequenceNumber}")
+    result
+  }
   /**
    * Creates a new Kinesis client from provided AWS access key and secret
    * key. If both are set to "cpf", then authenticate using the classpath

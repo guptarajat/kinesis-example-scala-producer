@@ -31,6 +31,8 @@ object Dependencies {
     val jacksonCore = "2.3.0"
     val slf4j      = "1.7.5"
     val awsSdk     = "1.6.10"
+    val twitter4j  = "4.0.2"
+    val twitter4js = "4.0.2"
     // Scala
     val argot      = "1.0.1"
     val config     = "1.0.2"
@@ -52,6 +54,8 @@ object Dependencies {
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core"     % V.jacksonCore
     val slf4j       = "org.slf4j"                  % "slf4j-simple"     % V.slf4j
     val awsSdk      = "com.amazonaws"              % "aws-java-sdk"     % V.awsSdk
+    val twitter4j   = "org.twitter4j"              % "twitter4j-core"   % V.twitter4j
+    val twitter4js  = "org.twitter4j"              % "twitter4j-stream" % V.twitter4js
     // Scala
     val argot       = "org.clapper"                %% "argot"           % V.argot
     val config      = "com.typesafe"               %  "config"          % V.config
