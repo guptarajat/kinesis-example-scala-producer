@@ -38,7 +38,7 @@ object KinesisExampleScalaProducerBuild extends Build {
         Libraries.scalazon,
         Libraries.specs2,
         Libraries.commonsLang3,
-        Libraries.thrift,
+        //Libraries.thrift,
         Libraries.slf4j,
         Libraries.awsSdk,
         Libraries.twitter4j,

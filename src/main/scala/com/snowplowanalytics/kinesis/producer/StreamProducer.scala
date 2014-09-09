@@ -44,7 +44,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 // Thrift.
-import org.apache.thrift.TSerializer
+//import org.apache.thrift.TSerializer
 
 /**
  * The core logic for the Kinesis event producer
@@ -87,7 +87,7 @@ case class StreamProducer(config: Config) {
   // Initialize
   private implicit val kinesis = createKinesisClient(ProducerConfig.awsAccessKey, ProducerConfig.awsSecretKey)
   private var stream: Option[Stream] = None
-  private val thriftSerializer = new TSerializer()
+  //private val thriftSerializer = new TSerializer()
 
   /**
    * Creates a new stream if one doesn't exist.
@@ -162,8 +162,8 @@ case class StreamProducer(config: Config) {
     var writeExampleRecord: (String, Long) => PutResult =
       if (ProducerConfig.streamDataType == "string") {
         writeExampleStringRecord
-      } else if (ProducerConfig.streamDataType == "thrift") {
-        writeExampleThriftRecord
+      //} else if (ProducerConfig.streamDataType == "thrift") {
+      //  writeExampleThriftRecord
       } else {
         throw new RuntimeException("data-type configuration must be 'string' or 'thrift'.")
       }
@@ -213,7 +213,7 @@ case class StreamProducer(config: Config) {
     })
     // sample() method internally creates a thread which manipulates TwitterStream and calls these adequate listener methods continuously.
   var query = new FilterQuery
-  query.track(Array("#MH17"))
+  query.track(Array("#kashmirfloods"))
   twitterStream.filter(query);
   }
 
@@ -271,28 +271,6 @@ case class StreamProducer(config: Config) {
       data = ByteBuffer.wrap(stringData.getBytes),
       key = stringKey
     )
-    if (ProducerConfig.logging) println(s"Writing successful.")
-    if (ProducerConfig.logging) println(s"  + ShardId: ${result.shardId}")
-    if (ProducerConfig.logging) println(s"  + SequenceNumber: ${result.sequenceNumber}")
-    result
-  }
-
-  private[producer] def writeExampleThriftRecord(
-      stream: String, timestamp: Long): PutResult = {
-    if (ProducerConfig.logging) println(s"Writing Thrift record.")
-    val dataName = "example-record"
-    val dataTimestamp = timestamp % 100000
-    val streamData = new generated.StreamData(dataName, dataTimestamp)
-    val stringKey = s"partition-key-${timestamp % 100000}"
-    if (ProducerConfig.logging) println(s"  + data.name: $dataName")
-    if (ProducerConfig.logging) println(s"  + data.timestamp: $dataTimestamp")
-    if (ProducerConfig.logging) println(s"  + key: $stringKey")
-    val result = this.synchronized{ 
-      writeRecord(
-        data = ByteBuffer.wrap(thriftSerializer.serialize(streamData)),
-        key = stringKey
-      )
-    }
     if (ProducerConfig.logging) println(s"Writing successful.")
     if (ProducerConfig.logging) println(s"  + ShardId: ${result.shardId}")
     if (ProducerConfig.logging) println(s"  + SequenceNumber: ${result.sequenceNumber}")
